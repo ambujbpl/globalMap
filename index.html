@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Leaflet tutorials">
+    <meta name="keywords" content="HTML, CSS, JSON, JavaScript">
+    <meta name="author" content="Ambuj Dubey">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet</title>
+    <link rel="stylesheet" type="text/css" href="./lib/leaflet/leaflet.css">
+    <link rel="stylesheet" type="text/css" href="./lib/leaflet/leaflet.label.css">
+    <script type="text/javascript" src="./lib/leaflet/leaflet.js"></script>
+    <script type="text/javascript" src="./lib/leaflet/leaflet.label.js"></script>
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?v=3&sensor=false"></script>
+    <script type="text/javascript" src="./lib/leaflet/leaflet-google.js"></script>
+    <script type="text/javascript" src="./data/countries.geojson"></script>
+    <style type="text/css">
+        #mapid {
+            height: 550px;
+            width: 100%;
+        }
+
+        .legend {
+            width: 40%;
+            background-color: white;
+            line-height: 13px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .legend i {
+            width: 25px;
+            float: left;
+            height: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <h6>Global Map</h6>
+    <div id="mapid"></div>
+</body>
+<script type="text/javascript">
+    // and here's the trick (works everywhere)
+    function r(f) {
+        /in/.test(document.readyState) ? setTimeout('r(' + f + ')', 9) : f()
+    }
+    // use like
+    r(function() {
+
+        var layer;
+        // Initiate the map
+        var mymap = L.map('mapid').setView([30.4, 79.1], 7); //here  we set defualt view position and Zoomlavel (note here zoomlavel set to 7)
+
+        // This adds the tiles
+        L.tileLayer(
+            'https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png', {
+                attribution: 'Maps &copy; <a href="http://www.thunderforest.com">Thunderforest</a>, Data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+                maxZoom: 18,
+            }).addTo(mymap);
+        // var mymap = L.map('mapid').setView([51.505, -0.09], 13);
+
+        // here I add a scale bar
+        L.control.scale({
+                position: 'topright',
+                imperial: false
+            })
+            .addTo(mymap);
+
+
+
+        function getCountryColor(id) {
+            // console.log("population : "+population)
+            if (id === 'CHN') return 'red'
+            else if (id === 'IND') return 'blue'
+            else if (id === 'PAK') return 'green'
+            else return '#' + Math.floor(100000 + Math.random() * 19)
+        }
+
+        function countriesStyle(feature) {
+            // feature.properties
+            // feature.properties.pop_est
+            // console.log("feature : " + feature.id)
+            return {
+                fillColor: getCountryColor(feature.id),
+                weight: 2,
+                opacity: 1,
+                color: "white",
+                dashArray: 3,
+                fillOpacity: 0.7,
+            }
+        }
+
+        function highlight(e) {
+            var area = e.target
+            // for find key in element 
+            // for (var key in area) {
+            // console.log(key);
+            // }
+            // console.log(e.target.feature.properties)
+            // .bindTooltip(e.target.feature.properties.name,{noHide:true})
+            var id = area.feature.id
+            if (id === 'CHN' || id === 'IND' || id === 'PAK') {
+                area.setStyle({
+                    weight: 5,
+                    color: 'black',
+                    // fillColor:"DodgerBlue",
+                    fillColor: getCountryColor(id),
+                    fillOpacity: 0.4,
+                })
+            } else {
+                area.setStyle({
+                    weight: 5,
+                    color: 'black',
+                    fillColor: 'white',
+                    fillOpacity: 0.2,
+                })
+            }
+            if (!L.Browser.ie && !L.Browser.opera) {
+                area.bringToFront();
+            }
+        }
+
+        function resetHighlight(e) {
+            layer.resetStyle(e.target)
+        }
+
+        function zoomToFeature(e) {
+            mymap.fitBounds(e.target.getBounds())
+        }
+
+        function layerOnEachFeature(feature, layer) {
+            // console.log(" test : "+feature.properties);
+            // for(var key in feature.properties){
+            // 	console.log(key);
+            // 	// console.log(feature.key);
+            // }
+            layer.on({
+                mouseover: highlight,
+                mouseout: resetHighlight,
+                click: zoomToFeature,
+            });
+
+            // (e.target.feature.properties.name,{noHide:true})
+            layer.bindTooltip(feature.properties.name.toString(), {
+                noHide: true
+            });
+        }
+
+        layer = L.geoJson(countries, {
+            style: countriesStyle,
+            onEachFeature: layerOnEachFeature,
+        }).addTo(mymap);
+        mymap.fitBounds(layer.getBounds())
+        // 	var layer = L.geoJson(kcTracts, {
+        //     style: myStyle
+        // }).addTo(map);
+        var legend = L.control({
+            position: 'bottomright'
+        })
+        legend.onAdd = function(mymap) {
+            // alert("map");
+            var div = L.DomUtil.create('div', 'legend')
+            var labels = ['india', 'china', 'pakistan', 'others']
+            var colours = ['blue', 'red', 'green', 'black']
+            div.innerHTML = '<div><b>Legend</b></div>'
+            for (var i = 0; i < colours.length; i++) {
+                // alert(i);
+                div.innerHTML += '<i style="background:' + colours[i] + ';"></i>&nbsp;&nbsp;' + labels[i] + '<br>'
+            }
+            // console.log("div : " + div);
+            return div
+        }
+        legend.addTo(mymap)
+
+        var ind = ['20.5937', '78.9629']
+        // marker.addTo(mymap)
+        var india_marker = L.marker(ind).addTo(mymap) //default marker
+        var pak = ['30.3753', '69.3451']
+        var circle = L.circle(
+            pak,
+            1000, {
+                color: 'green',
+                fillColor: 'green',
+                fillOpacity: 0.9
+            }
+        ).addTo(mymap)
+        var chi = ['39.913818', '116.363625']
+        var cus = L.icon({
+            iconUrl: './img/leaf-green.png',
+            shadowUrl: './img/leaf-shadow.png',
+            iconSize: [38, 95], // size of the icon
+            shadowSize: [50, 64], // size of the shadow
+            iconAnchor: [22, 94], // point of the icon which will correspond to marker's location
+            shadowAnchor: [4, 62], // the same for the shadow
+            popupAnchor: [-3, -76] // point from which the popup should open relative to the iconAnchor
+        })
+        var custom = L.marker(chi, {
+            icon: cus
+        }).addTo(mymap)
+        india_marker.bindPopup('<b>India</b><img width="100%" src="https://media.gettyimages.com/photos/an-army-jawan-on-alert-during-the-occasion-of-the-indian-army-day-picture-id504326550">', {
+            minWidth: 200
+        })
+
+        var googleLayer = L.Google();
+        // googleLayer.addTo(mymap)
+        mymap.addLayer(googleLayer)
+    });
+
+    // // control that shows chi info on hover
+    // var info = L.control();  
+
+
+
+
+    //      // I don't know what this does
+    //       info.onAdd = function (map) {
+    // 	this._div = L.DomUtil.create('div', 'info');
+    // 	this.update();
+    // 	return this._div;
+    // };
+
+    //       // This sets the info bar. I think the "props" will find 
+    //       // the properties field from the json
+    // info.update = function (props) {
+    // 	this._div.innerHTML = '<h4>Chi slope</h4>' +  (props ?
+    // 		'<b>' + props.chi + ' dimensionless'
+    // 		: 'Hover over a dot');
+    // };
+
+
+    // // get color depending on population density value
+    //       // These values come from colorbrewer
+    // function getColor(d) {
+    // 	return d > 50  ? '#800026' :
+    // 	       d > 25  ? '#BD0026' :
+    // 	       d > 10  ? '#E31A1C' :
+    // 	       d > 5   ? '#FC4E2A' :
+    // 	       d > 2.5 ? '#FD8D3C' :
+    // 	       d > 1   ? '#FEB24C' :
+    // 	       d > 0.5 ? '#FED976' :
+    // 	                 '#FFEDA0';
+    // }        
+
+    //       // This colour the feature by the chi value
+    // function style(feature) {
+    // 	return {
+    // 		weight: 2,
+    // 		opacity: 1,
+    // 		color: 'white',
+    // 		dashArray: '3',
+    // 		fillOpacity: 0.7,
+    // 		fillColor: getColor(feature.properties.chi)
+    // 	};
+    // }        
+
+    // // This sets the feature 
+    //       function highlightFeature(e) {
+    // 	var layer = e.target;
+
+    // 	layer.setStyle({
+    // 		weight: 5,
+    // 		color: '#666',
+    // 		dashArray: '',
+    // 		fillOpacity: 0.7
+    // 	});
+
+    // 	if (!L.Browser.ie && !L.Browser.opera) {
+    // 		layer.bringToFront();
+    // 	}
+
+    // 	info.update(layer.feature.properties);
+    // }      
+
+    // 	// This will zoom to the feature if you click on it
+    //       function zoomToFeature(e) {
+    // 	map.fitBounds(e.target.getBounds());
+    // }       
+
+    // // This turns off the highlight after mouseout
+    //       function resetHighlight(e) {
+    // 	geojson.resetStyle(e.target);
+    // 	info.update();
+    // }
+
+    // // var geojsonLayer = new L.GeoJSON.AJAX("test_chi.json");       
+
+    //       // geojsonLayer.addTo(mymap);
+
+    //       geojson.eachLayer(function (layer) {
+    // 	layer.bindPopup(layer.feature.properties.name);
+    // });
+
+
+    // 	function onEachFeature(feature, layer) {
+    // 	layer.on({
+    // 		mouseover: highlightFeature,
+    // 		mouseout: resetHighlight,
+    // 		click: zoomToFeature
+    // 	});
+    // }       
+
+    //       // This loads the data 
+    //       //geojsonLayer({
+    // //	style: style,
+    // //	onEachFeature: onEachFeature
+    // //}).addTo(map);
+
+    // // Create a legend
+    //       var legend = L.control({position: 'bottomright'});
+
+    //       // here is all the data for the legend
+    // legend.onAdd = function (mymap) {
+
+    // 	var div = L.DomUtil.create('div', 'info legend'),
+    // 		grades = [0, 0.5, 1, 2.5, 5, 10, 25, 50],
+    // 		labels = [],
+    // 		from, to;
+
+    // 	for (var i = 0; i < grades.length; i++) {
+    // 		from = grades[i];
+    // 		to = grades[i + 1];
+
+    // 		labels.push(
+    // 			'<i style="background:' + getColor(from + 1) + '"></i> ' +
+    // 			from + (to ? '&ndash;' + to : '+'));
+    // 	}
+
+    // 	div.innerHTML = labels.join('<br>');
+    // 	return div;
+    // };
+
+    // legend.addTo(mymap);
+</script>
+
+</html>
